@@ -2,11 +2,11 @@ use std::env;
 use once_cell::sync::Lazy;
 
 pub mod connection;
-pub use connection::get_redis_connection;
+
 
 #[cfg(test)]
 mod tests {
-    use super::get_redis_connection;
+    use super::connection::get_redis_connection;
     use redis::{Commands};
 
     #[tokio::test]

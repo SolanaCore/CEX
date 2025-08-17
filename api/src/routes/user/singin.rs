@@ -1,13 +1,18 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{post, web, HttpResponse, Responder, cookie::Cookie};
 use serde::{Deserialize, Serialize};
 use std::env;
 use actix_web::http::StatusCode;
+use jsonwebtoken::encode;
+use crate::utils::KEYS;
+use crate::postgres::schema::users
+use validator::validate;
 
-#[derive(Deserialize)]
-pub(crate) struct SigninData {
-    username: String,
-    password: String,
+#[derive(Debug, Serialize, Deserialize)]
+struct Claims {
+    username: String,  // user id
+    exp: usize,   // expiration time
 }
+
 
 #[derive(Serialize)]
 pub(crate) struct SigninPayload {
@@ -17,45 +22,25 @@ pub(crate) struct SigninPayload {
     error: Option<String>,    // Error message on failure
 }
 
+
 #[post("/api/signin")]
-async fn signin(data: web::Json<SigninData>) -> impl Responder {
-    let username = data.username.clone();
-    let password = data.password.clone();
-
-    let secret = match env::var("JWT_SECRET") {
-        Ok(s) => s,
-        Err(_) => {
-            return HttpResponse::InternalServerError()
-                .json(SigninPayload {
-                    status: StatusCode::INTERNAL_SERVER_ERROR.as_u16(),
-                    username: None,
-                    jwt: None,
-                    error: Some("JWT_SECRET not set".to_string()),
-                });
-        }
+async fn signin(db_conn:web::Data<DbPool>, web::Json<SigninData>) -> impl Responder {
+    let exp = (Utc::now().naive_utc() + chrono::naive::Days::new(1)).timestamp() as usize;
+    users.filter(email.eq(&form.email), hash_password.eq(hash_password(&data.password))).first::<User>(conn);
+    let claims = Claims {
+        username: data.username,
+        exp,
     };
 
-    // TODO: Verify username and password from DB here
-    let is_valid_user = true; // replace with real check
+     let token = encode(&Header::default(), &claims, &KEYS.encoding).map_err(
+        |_| AuthError::TokenCreation
+    )?;
+    let cookie = Cookie::build("token", token)
+                        .path("/api")
+                        .secure(true)
+                        .http_only(true)
+                        .finish();
 
-    let response = if is_valid_user {
-        // TODO: generate JWT token using `secret` and user info
-        let token = "dummy.jwt.token".to_string();
-
-        SigninPayload {
-            status: StatusCode::OK.as_u16(),
-            username: Some(username),
-            jwt: Some(token),
-            error: None,
-        }
-    } else {
-        SigninPayload {
-            status: StatusCode::UNAUTHORIZED.as_u16(),
-            username: None,
-            jwt: None,
-            error: Some("Invalid username or password".to_string()),
-        }
-    };
 
     HttpResponse::Ok().json(response)
 }

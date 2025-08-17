@@ -44,3 +44,7 @@ Notes:
 - CEX systems usually process these in-memory with a single-threaded event loop per market
 - Each trading pair (BTC/USDT, ETH/USDT, etc.) often has its own matching engine instance
 */
+
+pub fn main() {
+
+}

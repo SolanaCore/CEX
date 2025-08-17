@@ -22,7 +22,7 @@ use dotenv::dotenv;
 
 pub type DbPool = Pool<ConnectionManager<PgConnection>>;
 
-const POOL_CONNECTION_SIZE: u32 = 10;
+const POOL_CONNECTION_SIZE: u32 = 100;
 
 pub static DB_POOL: Lazy<DbPool> = Lazy::new(|| { 
     dotenv().ok(); // This line loads the environment variables from the ".env" file.

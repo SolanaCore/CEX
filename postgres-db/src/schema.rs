@@ -19,6 +19,18 @@ diesel::table! {
 }
 
 diesel::table! {
+    trades (id) {
+        id -> Uuid,
+        is_buyer_maker -> Bool,
+        price -> Numeric,
+        qty -> Numeric,
+        #[max_length = 20]
+        symbol -> Varchar,
+        timestamp -> Timestamp,
+    }
+}
+
+diesel::table! {
     user_balances (id) {
         id -> Uuid,
         user_id -> Uuid,
@@ -52,6 +64,7 @@ diesel::joinable!(user_balances -> users (user_id));
 
 diesel::allow_tables_to_appear_in_same_query!(
     orders,
+    trades,
     user_balances,
     users,
 );

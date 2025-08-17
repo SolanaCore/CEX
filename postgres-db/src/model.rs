@@ -2,84 +2,97 @@ use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 use chrono::NaiveDateTime;
-use bigdecimal::BigDecimal;
-use crate::schema;
 
+// ---------------- USERS ----------------
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::users)]
+#[diesel(table_name = users)]
 pub struct User {
     pub id: Uuid,
     pub username: String,
     pub email: String,
     pub password_hash: String,
-    pub wallet_pubkey: String,
-    pub wallet_privkey_enc: Vec<u8>,
-    pub is_active: Option<bool>,
-    pub created_at: Option<NaiveDateTime>,
-    pub last_login_at: Option<NaiveDateTime>,
+    pub created_at: NaiveDateTime,
 }
 
+// Insertable for creating new users
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::users)]
-pub struct NewUser<'a> {
-    pub username: &'a str,
-    pub email: &'a str,
-    pub password_hash: &'a str,
-    pub wallet_pubkey: &'a str,
-    pub wallet_privkey_enc: &'a [u8],
-    pub is_active: Option<bool>,
-    pub created_at: Option<NaiveDateTime>,
-    pub last_login_at: Option<NaiveDateTime>,
+#[diesel(table_name = users)]
+pub struct NewUser {
+    pub username: String,
+    pub email: String,
+    pub password_hash: String,
 }
 
+// ---------------- BALANCES ----------------
 #[derive(Queryable, Identifiable, Associations, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::user_balances)]
+#[diesel(table_name = balances)]
 #[diesel(belongs_to(User))]
-pub struct UserBalance {
+pub struct Balance {
     pub id: Uuid,
     pub user_id: Uuid,
-    pub token_mint: String,
-    pub available_balance: BigDecimal,
-    pub locked_balance: BigDecimal,
-    pub updated_at: Option<NaiveDateTime>,
+    pub asset: String,
+    pub amount: bigdecimal::BigDecimal,
 }
 
+// Insertable for balances
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::user_balances)]
-pub struct NewUserBalance<'a> {
+#[diesel(table_name = balances)]
+pub struct NewBalance {
     pub user_id: Uuid,
-    pub token_mint: &'a str,
-    pub available_balance: BigDecimal,
-    pub locked_balance: BigDecimal,
-    pub updated_at: Option<NaiveDateTime>,
+    pub asset: String,
+    pub amount: bigdecimal::BigDecimal,
 }
 
+// ---------------- ORDERS ----------------
 #[derive(Queryable, Identifiable, Associations, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::orders)]
+#[diesel(table_name = orders)]
 #[diesel(belongs_to(User))]
 pub struct Order {
     pub id: Uuid,
     pub user_id: Uuid,
     pub symbol: String,
-    pub side: String,
-    pub price: BigDecimal,
-    pub quantity: BigDecimal,
-    pub filled_quantity: BigDecimal,
-    pub status: String,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
+    pub side: String, // "BUY" or "SELL"
+    pub price: bigdecimal::BigDecimal,
+    pub quantity: bigdecimal::BigDecimal,
+    pub filled_quantity: bigdecimal::BigDecimal,
+    pub status: String, // "OPEN", "PARTIALLY_FILLED", "FILLED", "CANCELLED"
+    pub created_at: NaiveDateTime,
 }
 
+// Insertable for orders
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = schema::orders)]
-pub struct NewOrder<'a> {
+#[diesel(table_name = orders)]
+pub struct NewOrder {
     pub user_id: Uuid,
-    pub symbol: &'a str,
-    pub side: &'a str,
-    pub price: BigDecimal,
-    pub quantity: BigDecimal,
-    pub filled_quantity: BigDecimal,
-    pub status: &'a str,
-    pub created_at: Option<NaiveDateTime>,
-    pub updated_at: Option<NaiveDateTime>,
+    pub symbol: String,
+    pub side: String,
+    pub price: bigdecimal::BigDecimal,
+    pub quantity: bigdecimal::BigDecimal,
+    pub status: String,
+}
+
+// ---------------- TRADES ----------------
+#[derive(Queryable, Identifiable, Associations, Serialize, Deserialize, Debug)]
+#[diesel(table_name = trades)]
+#[diesel(belongs_to(Order, foreign_key = buy_order_id))]
+#[diesel(belongs_to(Order, foreign_key = sell_order_id))]
+pub struct Trade {
+    pub id: Uuid,
+    pub buy_order_id: Uuid,
+    pub sell_order_id: Uuid,
+    pub symbol: String,
+    pub price: bigdecimal::BigDecimal,
+    pub quantity: bigdecimal::BigDecimal,
+    pub executed_at: NaiveDateTime,
+}
+
+// Insertable for trades
+#[derive(Insertable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = trades)]
+pub struct NewTrade {
+    pub buy_order_id: Uuid,
+    pub sell_order_id: Uuid,
+    pub symbol: String,
+    pub price: bigdecimal::BigDecimal,
+    pub quantity: bigdecimal::BigDecimal,
 }

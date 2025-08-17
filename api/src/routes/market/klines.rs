@@ -1,20 +1,18 @@
-use actix_web::{post, web, HttpResponse, Responder};
+use actix_web::{get, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
-use std::env;
-use actix_web::http::StatusCode;
+use chrono::{Utc};
 use crate::utils::{validate_utc_time_format};
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub(crate) struct Response;
 
-pub(crate) struct Response {
-    
-} 
-#[get("/api/v1/historic_trades")]
-async fn historic_trades(data: web::json<Request>) {
+
+#[get("/api/v1/klines")]
+async fn klines(data: web::Json<Request>) -> impl Responder {
     let symbol = data.symbol.clone();
-    let limit = data.limit.unwrap_or(100);
-        HttpResponse::Ok().finish()
+    let klines_interval = data.klines_interval.clone();
 
-         if !validate_utc_time_format(&data.start_time) {
+    if !validate_utc_time_format(&data.start_time) {
         return HttpResponse::BadRequest().json("Invalid start_time format. Expected format: YYYY-MM-DDTHH:mm:ssZ");
     }
 
@@ -28,4 +26,5 @@ async fn historic_trades(data: web::json<Request>) {
         Utc::now().to_rfc3339()
     };
 
+    HttpResponse::Ok().json(Response)
 }

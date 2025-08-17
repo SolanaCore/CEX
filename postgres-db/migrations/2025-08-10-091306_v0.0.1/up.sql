@@ -45,3 +45,20 @@ CREATE TABLE orders (
 
 CREATE INDEX idx_orders_user_id ON orders(user_id);
 CREATE INDEX idx_orders_status ON orders(status);
+
+-- 4. Trades
+CREATE TABLE IF NOT EXISTS trades (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    buy_order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    sell_order_id UUID NOT NULL REFERENCES orders(id) ON DELETE CASCADE,
+    buyer_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    seller_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    symbol VARCHAR(20) NOT NULL,
+    price NUMERIC(30,10) NOT NULL CHECK (price >= 0),
+    quantity NUMERIC(30,10) NOT NULL CHECK (quantity > 0),
+    quote_quantity NUMERIC(30,10) NOT NULL,
+    is_buyer_maker BOOLEAN NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_trades_symbol ON trades(symbol);
+CREATE INDEX IF NOT EXISTS idx_trades_executed_at ON trades(executed_at);

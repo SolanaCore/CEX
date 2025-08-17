@@ -4,4 +4,5 @@ pub mod connection;
 
 pub use model::*;
 pub use schema::*;
-pub use connection::*;
+pub use connection::*;  
+
