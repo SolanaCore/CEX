@@ -2,9 +2,10 @@ use regex::Regex;
 use once_cell::sync::Lazy;
 use jsonwebtoken::{DecodingKey, EncodingKey};
 use std::env;
+//Argon2 -> for password hashing in rust...
 use argon2::{Argon2, PasswordHasher, PasswordVerifier, password_hash::Salt};
 
-
+//JWT STUFF 
 struct Keys {
     encoding: EncodingKey,
     decoding: DecodingKey,
@@ -19,37 +20,32 @@ impl Keys {
     }
 }
 
-static KEYS: Lazy<Keys> = Lazy::new(|| {
+//constants
+pub const MIN_CONST: u64 = 1;
+pub const MAX_CONST: u64 = 25;
+
+//STATIC 
+pub static KEYS: Lazy<Keys> = Lazy::new(|| {
     Keys::new()
 });
 
-static ARGON2: Lazy<Argon2> = Lazy::new(|| {
+pub static ARGON2: Lazy<Argon2> = Lazy::new(|| {
     Argon2::default()
 })
 
-static SYMBOL_REGEX: Lazy<Regex> = Lazy::new(|| {
+pub static SYMBOL_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[A-Z]{2,10}/[A-Z]{2,10}$").unwrap()
 });
 
+pub static UTC_REGEX - LAZY::new(|| {
+    Regex::new(r"[a-z]{2}$").unwrap()
+});
 
 
 pub fn hash_password(password: &str) {
     let hash = (ARGON2.get()).hash_password(password.as_bytes(), salt).unwrap();
     hash
-
 }
-
-static UTC_REGEX - LAZY::new(|| {
-    Regex::new(r"[a-z]{2}$").unwrap()
-});
-
-
-
-
-//constants
-pub const MIN_CONST: u64 = 1;
-pub const MAX_CONST: u64 = 25;
-
 
 pub fn is_valid_kline(klines_interval: &str) -> Result<(), ValidationError> {
     // Allowed kline intervals
