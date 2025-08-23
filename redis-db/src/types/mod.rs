@@ -1,8 +1,4 @@
-pub mod type;
-pub use type::*;
-
 use serde::{Serialize, Deserialize};
-use validator::Validate;
 
 #[derive(Serialize, Deserialize, Debug, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -12,7 +8,7 @@ pub enum OrderSide {
 }
 
 // #[serde(rename_all = "lowercase")] -> this lets you specify how the enum should be serialized and deserialized. In this case, it will convert the enum variants to lowercase strings when serialized to JSON.
-#[derive(Serialize, Deserialize, Debug, Validate)]
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(rename_all = "lowercase")] 
 pub enum OrderStatus {
     New,
@@ -21,3 +17,9 @@ pub enum OrderStatus {
     Cancelled,
     Rejected
 }
+
+pub mod message_to_engine;
+pub mod message_from_engine;
+
+pub use message_to_engine::*;
+pub use message_from_engine::*;

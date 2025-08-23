@@ -1,29 +1,34 @@
-use crate::connection::{REDIS_POOL, RedisPool};
+use crate::connection::REDIS_POOL;
 use log::info;
-use crate::types::MessageToSend;
+use crate::types::{MessageToSend, MessageFromOrderbook};
+use r2d2_redis::redis::{self, Commands};
+use serde::Serialize;
 
-pub struct RedisInvoker {
-    pub conn: RedisPool,
+#[derive(Serialize, Debug)]
+struct MessageWrapper {
+    client_id: String,
+    message: MessageToSend,
 }
+
+pub struct RedisInvoker;
 
 impl RedisInvoker {
     pub fn new() -> Self {
-        Self {
-            pool: REDIS_POOL.clone(),
-        }
+        Self
     }
 
-    /// Publish a message to a channel
+
+    /// Publish a message
     pub fn publish_message(&self, channel: &str, message: &str) -> redis::RedisResult<()> {
-        let mut conn = self.pool.get()?;
+        let mut conn = REDIS_POOL.get().expect("Failed to get Redis connection");
         info!("Publishing to channel: {}, message: {}", channel, message);
-        conn.publish(channel, message)?;
+        redis::cmd("PUBLISH").arg(channel).arg(message).execute(&mut *conn);
         Ok(())
     }
 
-    /// Subscribe to a channel
-    pub fn subscribe<F>(&self, channel: &str) -> redis::RedisResult<()> {
-        let mut conn = self.pool.get()?;
+    /// Blocking subscribe
+    pub fn subscribe(&self, channel: &str) -> redis::RedisResult<()> {
+        let mut conn = REDIS_POOL.get().expect("Failed to get Redis connection");
         let mut pubsub = conn.as_pubsub();
         pubsub.subscribe(channel)?;
 
@@ -32,43 +37,50 @@ impl RedisInvoker {
         loop {
             let msg = pubsub.get_message()?;
             let payload: String = msg.get_payload()?;
-
             info!("Received message: {}", payload);
         }
-        Ok(())
     }
 
-    /// Placeholder: async sending (future extension)
-     /// Async send (using tokio-redis)
-    pub async fn send_and_await(&self, message: MessageToSend) -> redis::RedisResult<MessageToSend> {
-        let client_id = message.client_id.clone();
+    /// Send a message and wait for response (blocking)
+    pub fn send_and_await(&self, message: MessageToSend) -> redis::RedisResult<MessageFromOrderbook> {
+        info!("Sending message to engine: {:?}", message);
 
-        // Get async connection
-        let mut conn = self.pool.get()?;
-        let mut async_conn = redis::aio::ConnectionLike::from_connection(conn)?;
+        let mut sub_conn = REDIS_POOL.get().expect("Failed to get Redis connection");
+        let mut pub_conn = REDIS_POOL.get().expect("Failed to get Redis connection");
 
-        // Push message asynchronously
-        let serialized = serde_json::to_string(&message).expect("Failed to serialize message");
-        let _: () = redis::cmd("LPUSH")
-            .arg("messages")
-            .arg(&serialized)
-            .query_async(&mut async_conn)
-            .await?;
-        info!("Async pushed message to Redis");
+        //pattern match inside the message to send enum
+        let client_id = match &message {
+            MessageToSend::PlaceOrder { client_id, .. } => client_id.clone(),
+            MessageToSend::CancelOrder { client_id, .. } => client_id.clone(),
+            MessageToSend::GetDepth { client_id, .. } => client_id.clone(),
+            MessageToSend::GetOpenOrders { client_id, .. } => client_id.clone(),
+        };
 
-        // Subscribe asynchronously
-        let mut pubsub_conn = async_conn.into_pubsub();
-        //ASYNC pubsub connection
-        pubsub_conn.subscribe(&client_id).await?;
-        info!("Subscribed to {}", client_id);
+        info!("Generated client_id = {}", client_id);
+
+        let mut pubsub = sub_conn.as_pubsub();
+        pubsub.subscribe(&client_id)?;
+        info!("Subscribed to response channel: {}", client_id);
+
+        // Wrap message
+        let message_wrapper = MessageWrapper {
+            client_id: client_id.clone(),
+            message,
+        };
+
+        // Push to "messages" queue
+        let serialized = serde_json::to_string(&message_wrapper).expect("Failed to serialize message");
+        let _: () = pub_conn.lpush("messages", serialized)?;
+        info!("Pushed message to Redis list");
 
         // Wait for response
-        let msg = pubsub_conn.on_message().next().await.unwrap();
+        let msg = pubsub.get_message()?;
         let payload: String = msg.get_payload()?;
-        info!("Async received: {:?}", payload);
+        info!("Received payload = {}", payload);
 
-        pubsub_conn.unsubscribe(&client_id).await?;
+        pubsub.unsubscribe(&client_id)?;
+        info!("Unsubscribed from {}", client_id);
+
         Ok(serde_json::from_str(&payload).expect("Failed to deserialize response"))
     }
-
 }

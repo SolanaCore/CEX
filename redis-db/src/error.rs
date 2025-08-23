@@ -1,12 +1,8 @@
 use thiserror::Error;
-use sqlx::Error as SqlxError;
 use std::{io, env::VarError};
 
 #[derive(Error, Debug)]
 pub enum ClickhouseError {
-    /// Database-related errors (connection, query, pool, etc.)
-    #[error("Database error: {0}")]
-    Database(#[from] SqlxError),
 
     /// Environment variable issues (missing or invalid values)
     #[error("Environment variable error: {0}")]

@@ -1,68 +1,72 @@
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 use crate::utils::{SYMBOL_REGEX, MIN_CONST, MAX_CONST};
-use crate::types::{OrderSide, OrderStatus};
+use crate::types::{OrderSide};
 
-#[derive(Serialize, Deserialize, Debug, Validate)]
+/// Outgoing messages (client → orderbook)
+#[derive(Serialize, Deserialize, Debug)]
 #[serde(tag = "type")]
-pub enum MessageFromOrderbook {
-    #[serde(rename = "DEPTH")]
-    Depth {
-        #[validate(nested)]
-        payload: DepthPayload,
+pub enum MessageToSend {
+    #[serde(rename = "PLACE_ORDER")]
+    PlaceOrder {
+        payload: PlaceOrderPayload,
+        client_id: String,
     },
-    #[serde(rename = "ORDERPLACED")]
-    OrderPlaced {
-        #[validate(nested)]
-        payload: OrderPlacedPayload,
+    #[serde(rename = "CANCEL_ORDER")]
+    CancelOrder {
+        payload: CancelOrderPayload,
+        client_id: String,
     },
-    #[serde(rename = "ORDERCANCELLED")]
-    OrderCancelled {
-        #[validate(nested)]
-        payload: OrderCancelledPayload,
+    #[serde(rename = "GET_DEPTH")]
+    GetDepth {
+        payload: DepthRequestPayload,
+        client_id: String,
     },
-    #[serde(rename = "OPENORDERS")]
-    OpenOrders {
-        #[validate(nested)]
-        payload: Vec<OpenOrderPayload>,
+    #[serde(rename = "GET_OPENORDERS")]
+    GetOpenOrders {
+        payload: OpenOrdersRequestPayload,
+        client_id: String,
     },
 }
 
-#[derive(Serialize, Deserialize, Debug, Validate)]
-pub struct OrderPlacedPayload {
-    #[validate(length(min = 1))]
-    order_id: String,
-}
+//
+// -------- PAYLOADS --------
+//
 
 #[derive(Serialize, Deserialize, Debug, Validate)]
-pub struct OrderCancelledPayload {
-    #[validate(length(min = MIN_CONST))]
-    order_id: String,
-}
+pub struct PlaceOrderPayload {
+    #[validate(regex(path = *SYMBOL_REGEX))]
+    pub symbol: String,
 
-#[derive(Serialize, Deserialize, Debug, Validate)]
-pub struct OpenOrderPayload {
-    #[validate(length(min = MIN_CONST))]
-    pub order_id: String,
-
-    pub executed_qty: f64,
+    pub side: OrderSide, // BUY or SELL
 
     #[validate(length(min = MIN_CONST))]
     pub price: String,
 
+    #[validate(length(min = MIN_CONST))]
     pub quantity: String,
-    pub side: OrderSide,
 
     #[validate(length(min = MIN_CONST, max = MAX_CONST))]
     pub user_id: String,
-
-    pub status: OrderStatus,
 }
 
 #[derive(Serialize, Deserialize, Debug, Validate)]
-pub struct DepthPayload {
-    #[validate(regex(path = "SYMBOL_REGEX"))]
+pub struct CancelOrderPayload {
+    #[validate(length(min = MIN_CONST))]
+    pub order_id: String,
+
+    #[validate(length(min = MIN_CONST, max = MAX_CONST))]
+    pub user_id: String,
+}
+
+#[derive(Serialize, Deserialize, Debug, Validate)]
+pub struct DepthRequestPayload {
+    #[validate(regex(path = *SYMBOL_REGEX))]
     pub symbol: String,
-    pub bids: Vec<[String; 2]>,
-    pub asks: Vec<[String; 2]>,
+}
+
+#[derive(Serialize, Deserialize, Debug, Validate)]
+pub struct OpenOrdersRequestPayload {
+    #[validate(length(min = MIN_CONST, max = MAX_CONST))]
+    pub user_id: String,
 }

@@ -1,4 +1,5 @@
 use once_cell::sync::Lazy;
+use regex::Regex;
 
 pub mod redis_manager;
 pub use redis_manager::*;
