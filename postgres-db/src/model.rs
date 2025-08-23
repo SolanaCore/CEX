@@ -24,7 +24,7 @@ pub struct User {
     pub is_active: Option<bool>,
     pub created_at: Option<DateTime<Utc>>,
     pub last_login_at: Option<DateTime<Utc>>,
-}
+};
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = users)]
@@ -34,7 +34,7 @@ pub struct NewUser {
     pub password_hash: String,
     pub wallet_pubkey: String,
     pub wallet_privkey_enc: Vec<u8>,
-}
+};
 
 // ---------------- BALANCES ----------------
 <<<<<<< Updated upstream
@@ -51,7 +51,7 @@ pub struct UserBalance {
     pub available_balance: BigDecimal,
     pub locked_balance: BigDecimal,
     pub updated_at: Option<DateTime<Utc>>,
-}
+};
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = user_balances)]
@@ -64,7 +64,7 @@ pub struct NewBalance {
     pub token_mint: String,
     pub available_balance: BigDecimal,
     pub locked_balance: BigDecimal,
-}
+};
 
 // ---------------- ORDERS ----------------
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
@@ -81,7 +81,7 @@ pub struct Order {
     pub status: String, // OPEN, PARTIALLY_FILLED, FILLED, CANCELLED
     pub created_at: Option<DateTime<Utc>>,
     pub updated_at: Option<DateTime<Utc>>,
-}
+};
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = Order)]
@@ -92,7 +92,7 @@ pub struct NewOrder {
     pub price: BigDecimal,
     pub quantity: BigDecimal,
     pub status: String,
-}
+};
 
 // ---------------- TRADES ----------------
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
@@ -110,7 +110,7 @@ pub struct Trade {
     pub qty: BigDecimal,
     pub symbol: String,
     pub timestamp: NaiveDateTime,
-}
+};
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = Trade)]
@@ -119,4 +119,4 @@ pub struct NewTrade {
     pub price: BigDecimal,
     pub qty: BigDecimal,
     pub symbol: String,
-}
+};
