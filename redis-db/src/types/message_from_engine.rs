@@ -5,25 +5,21 @@ use crate::types::{OrderSide};
 
 #[derive(Serialize, Deserialize, Debug, Validate)]
 pub enum MessageFromOrderbook<'a> {
-    #[derive(Validate)]
     Depth {
         #[validate(nested)]
-        payload: &'a DepthPayload,
+        payload: DepthPayload,
     },
-    #[derive(Validate)]
     OrderPlaced {
         #[validate(nested)]
-        payload: &'a OrderPlacedPayload,
+        payload: OrderPlacedPayload,
     },
-    #[derive(Validate)]
     OrderCancelled {
         #[validate(nested)]
-        payload: &'a OrderCancelledPayload,
+        payload: OrderCancelledPayload,
     },
-    #[derive(Validate)]
     OpenOrders {
         #[validate(nested)]
-        payload: &'a Vec<OpenOrderPayload>,
+        payload: Vec<OpenOrderPayload>,
     },
 }
 
@@ -56,7 +52,6 @@ pub struct OpenOrderPayload {
 /*
 Since in your case Buy and Sell are string variants of the enum, you can make the enum derive Deserialize so that when someone sends "buy" or "sell" as a string in JSON, Serde will automatically map it to your OrderSide enum.
 */
-
 
 #[derive(Serialize, Deserialize, Debug, Validate)]
 pub struct DepthPayload {
