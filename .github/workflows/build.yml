@@ -76,9 +76,7 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
 
       # Build and test each service separately
-      - name: Build API
-        working-directory: ./api
-        run: cargo build --verbose
+
 
       - name: Build WebSocket
         working-directory: ./ws
@@ -98,4 +96,8 @@ jobs:
       
       - name: Build Clickhouse-DB
         working-directory: ./clickhouse-db
+        run: cargo build --verbose
+      
+      - name: Build API
+        working-directory: ./api
         run: cargo build --verbose

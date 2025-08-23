@@ -1,12 +1,12 @@
 use actix_web::{App, HttpServer};
 use dotenv::dotenv;
-use crate::postgres::connection::DB_POOL;
-
+use postgres::connection::DB_POOL;
+use actix_web::web::Data;
 //TODO: CORS
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let db_conn = web::Data::new(DB_POOL.get());
+    let _db_conn = Data::new(DB_POOL.get());
     dotenv().ok(); // This line loads the environment variables from the ".env" file.
     HttpServer::new(|| {
         App::new()
