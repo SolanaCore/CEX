@@ -4,19 +4,24 @@ use crate::utils::{SYMBOL_REGEX, MIN_CONST, MAX_CONST};
 use crate::types::{OrderSide};
 
 #[derive(Serialize, Deserialize, Debug, Validate)]
+#[serde(tag = "type")]
 pub enum MessageFromOrderbook<'a> {
+    #[serde(rename = "DEPTH")]
     Depth {
         #[validate(nested)]
         payload: DepthPayload,
     },
+    #[serde(rename = "ORDERPLACED")]
     OrderPlaced {
         #[validate(nested)]
         payload: OrderPlacedPayload,
     },
+    #[serde(rename = "ORDERCANCELED")]
     OrderCancelled {
         #[validate(nested)]
         payload: OrderCancelledPayload,
     },
+    #[serde(rename = "OPENORDER")]
     OpenOrders {
         #[validate(nested)]
         payload: Vec<OpenOrderPayload>,
