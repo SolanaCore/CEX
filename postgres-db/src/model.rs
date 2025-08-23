@@ -1,10 +1,15 @@
 use diesel::prelude::*;
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
+<<<<<<< Updated upstream
 use chrono::{NaiveDateTime, DateTime, Utc};
 use bigdecimal::BigDecimal;
 
 use crate::schema::{trades, orders, users, user_balances};
+=======
+use chrono::NaiveDateTime;
+use crate::trades::dsl::{trades, orders, users, user_balances};
+>>>>>>> Stashed changes
 
 // ---------------- USERS ----------------
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
@@ -32,7 +37,11 @@ pub struct NewUser {
 }
 
 // ---------------- BALANCES ----------------
+<<<<<<< Updated upstream
 #[derive(Queryable, Identifiable, Associations, Serialize, Deserialize, Debug)]
+=======
+#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+>>>>>>> Stashed changes
 #[diesel(table_name = user_balances)]
 #[diesel(belongs_to(User))]
 pub struct UserBalance {
@@ -46,7 +55,11 @@ pub struct UserBalance {
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
 #[diesel(table_name = user_balances)]
+<<<<<<< Updated upstream
 pub struct NewUserBalance {
+=======
+pub struct NewBalance {
+>>>>>>> Stashed changes
     pub user_id: Uuid,
     pub token_mint: String,
     pub available_balance: BigDecimal,
@@ -54,8 +67,8 @@ pub struct NewUserBalance {
 }
 
 // ---------------- ORDERS ----------------
-#[derive(Queryable, Identifiable, Associations, Serialize, Deserialize, Debug)]
-#[diesel(table_name = orders)]
+#[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+#[diesel(table_name = Order)]
 #[diesel(belongs_to(User))]
 pub struct Order {
     pub id: Uuid,
@@ -71,7 +84,7 @@ pub struct Order {
 }
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = orders)]
+#[diesel(table_name = Order)]
 pub struct NewOrder {
     pub user_id: Uuid,
     pub symbol: String,
@@ -83,7 +96,13 @@ pub struct NewOrder {
 
 // ---------------- TRADES ----------------
 #[derive(Queryable, Identifiable, Serialize, Deserialize, Debug)]
+<<<<<<< Updated upstream
 #[diesel(table_name = trades)]
+=======
+#[diesel(table_name = Trade)]
+#[diesel(belongs_to(Order, foreign_key = buy_order_id))]
+#[diesel(belongs_to(Order, foreign_key = sell_order_id))]
+>>>>>>> Stashed changes
 pub struct Trade {
     pub id: Uuid,
     pub is_buyer_maker: bool,
@@ -94,7 +113,7 @@ pub struct Trade {
 }
 
 #[derive(Insertable, Serialize, Deserialize, Debug)]
-#[diesel(table_name = trades)]
+#[diesel(table_name = Trade)]
 pub struct NewTrade {
     pub is_buyer_maker: bool,
     pub price: BigDecimal,

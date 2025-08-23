@@ -348,6 +348,7 @@ dependencies = [
  "postgres",
  "redis 0.1.0",
  "tokio",
+ "validator",
 ]
 
 [[package]]
@@ -886,11 +887,6 @@ dependencies = [
  "once_cell",
  "r2d2",
  "r2d2_redis",
- "regex",
- "serde",
- "serde_json",
- "thiserror",
- "validator 0.19.0",
 ]
 
 [[package]]

@@ -9,3 +9,4 @@ log = "0.4.27"
 postgres = { version = "0.1.0", path = "../postgres-db" }
 redis = { version = "0.1.0", path = "../redis-db" }
 tokio = "1.47.1"
+validator = "0.20.0"
