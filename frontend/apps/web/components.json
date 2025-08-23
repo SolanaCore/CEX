@@ -11,10 +11,10 @@
   },
   "iconLibrary": "lucide",
   "aliases": {
-    "components": "@/components",
-    "hooks": "@/hooks",
-    "lib": "@/lib",
-    "utils": "@workspace/ui/lib/utils",
-    "ui": "@workspace/ui/components"
+    "components": "../../packages/ui/src/components",
+    "hooks": "../../packages/ui/src/hooks",
+    "lib": "../../packages/ui/src/lib",
+    "utils": "../../packages/ui/src/lib/utils",
+    "ui": "../../packages/ui/src/components"
   }
 }
