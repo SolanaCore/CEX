@@ -34,8 +34,11 @@ jobs:
           --health-retries 5
 
       clickhouse:
-        image: yandex/clickhouse-server:latest
+        image: clickhouse/clickhouse-server:24
         ports: [8123:8123, 9000:9000]
+        env:
+          CLICKHOUSE_USER: default
+          CLICKHOUSE_PASSWORD: ""
         options: >-
           --health-cmd "clickhouse-client --query 'SELECT 1'"
           --health-interval 10s
@@ -45,7 +48,14 @@ jobs:
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/cex
       REDIS_URL: redis://localhost:6379
-      CLICKHOUSE_URL: http://localhost:8123
+      CLICKHOUSE_HOST: localhost
+      CLICKHOUSE_PORT: 9000
+      CLICKHOUSE_DB: default
+      CLICKHOUSE_USER: default
+      CLICKHOUSE_PASSWORD: ""
+      CLICKHOUSE_CONNECT_TIMEOUT_SECONDS: 5
+      CLICKHOUSE_MAX_CONNECTIONS: 10
+      CLICKHOUSE_QUERY_TIMEOUT_SECONDS: 60
 
     steps:
       - uses: actions/checkout@v4
@@ -67,19 +77,25 @@ jobs:
 
       # Build and test each service separately
       - name: Build API
-        run: cargo build -p api --release
+        working-directory: ./api
+        run: cargo build --verbose
 
       - name: Build WebSocket
-        run: cargo build -p ws --release
+        working-directory: ./ws
+        run: cargo build --verbose
 
       - name: Build Engine
-        run: cargo build -p engine --release
+        working-directory: ./engine
+        run: cargo build --verbose
 
       - name: Build Redis-DB
-        run: cargo build -p redis-db --release
+        working-directory: ./redis-db
+        run: cargo build --verbose
       
-      - name: Build postgres-db
-        run: cargo build -p postgres-db --release
+      - name: Build Postgres-DB
+        working-directory: ./postgres-db
+        run: cargo build --verbose
       
       - name: Build Clickhouse-DB
-        run: cargo build -p clickhouse-db --release
+        working-directory: ./clickhouse-db
+        run: cargo build --verbose
