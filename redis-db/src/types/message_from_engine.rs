@@ -1,48 +1,66 @@
 use serde::{Serialize, Deserialize}
+use validator::Validate;
+use crate::utils::{SYMBOL_REGEX, MIN_CONST, MAX_CONST};
+use crate::types::{OrderSide};
 
-#[derive(Serialize, Deserialize, Debug)]
-pub enum MessageFromOrderbook {
+#[derive(Serialize, Deserialize, Debug, Validate)]
+pub enum MessageFromOrderbook<'a> {
+    #[derive(Validate)]
     Depth {
-        payload: DepthPayload,
+        #[validate(nested)]
+        payload: &'a DepthPayload,
     },
+    #[derive(Validate)]
     OrderPlaced {
-        payload: OrderPlacedPayload,
+        #[validate(nested)]
+        payload: &'a OrderPlacedPayload,
     },
+    #[derive(Validate)]
     OrderCancelled {
-        payload: OrderCancelledPayload,
+        #[validate(nested)]
+        payload: &'a OrderCancelledPayload,
     },
+    #[derive(Validate)]
     OpenOrders {
-        payload: Vec<OpenOrderPayload>,
+        #[validate(nested)]
+        payload: &'a Vec<OpenOrderPayload>,
     },
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Validate)]
 pub struct OrderPlacedPayload {
+    #[validate(length(min = "1"))]
     order_id: String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Validate)]
 pub struct OrderCancelledPayload {
+    #[validate(length(min = "MIN_CONST"))]
     order_id: String
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Validate)]
 pub struct OpenOrderPayload {
+    #[validate(length(min = "MIN_CONST"))]
     pub order_id: String,
     pub executed_qty: f64,
+    #[validate(length(min = "MIN_CONST"))]
     pub price: String,
     pub quantity: String,
     pub side: OrderSide,
+    #[validate(length(min = "MIN_CONST", max = "MAX_CONST"))]
     pub user_id: String,
+    pub status: OrderStatus,
 }
 
-pub enum OrderSide {
-    Buy,
-    Sell
-}
+/*
+Since in your case Buy and Sell are string variants of the enum, you can make the enum derive Deserialize so that when someone sends "buy" or "sell" as a string in JSON, Serde will automatically map it to your OrderSide enum.
+*/
 
-#[derive(Serialize, Deserialize, Debug)]
+
+#[derive(Serialize, Deserialize, Debug, Validate)]
 pub struct DepthPayload {
+    #[validate(regex(path = *SYMBOL_REGEX))]
     pub symbol: String,
     pub bids: Vec<[String; 2]>,
     pub asks: Vec<[String; 2]>,

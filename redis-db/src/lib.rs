@@ -1,11 +1,16 @@
 use std::env;
 use once_cell::sync::Lazy;
 
+
 pub mod connection;
+pub mod error;
+pub mod types;
+pub mod utils;
 
 
 #[cfg(test)]
 mod tests {
+    
     use super::connection::get_redis_connection;
     use redis::{Commands};
 
@@ -19,4 +24,10 @@ mod tests {
             .await.unwrap();
     
     }
+
+    //send_and_await
+
+    //publish
+
+    //subscribe
 }

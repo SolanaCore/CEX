@@ -1,11 +1,9 @@
-use crate::connection::REDIS_POOL;
+use crate::connection::{REDIS_POOL, RedisPool};
 use log::info;
-use crate::connection::RedisPool
-use std::ops::ControlFlow;
 use crate::types::MessageToSend;
 
 pub struct RedisInvoker {
-    pub pool: RedisPool,
+    pub conn: RedisPool,
 }
 
 impl RedisInvoker {
@@ -16,7 +14,7 @@ impl RedisInvoker {
     }
 
     /// Publish a message to a channel
-    pub fn publish(&self, channel: &str, message: &str) -> redis::RedisResult<()> {
+    pub fn publish_message(&self, channel: &str, message: &str) -> redis::RedisResult<()> {
         let mut conn = self.pool.get()?;
         info!("Publishing to channel: {}, message: {}", channel, message);
         conn.publish(channel, message)?;
@@ -24,10 +22,7 @@ impl RedisInvoker {
     }
 
     /// Subscribe to a channel
-    pub fn subscribe<F>(&self, channel: &str, mut callback: F) -> redis::RedisResult<()>
-    where
-        F: FnMut(String) -> ControlFlow<()>,
-    {
+    pub fn subscribe<F>(&self, channel: &str) -> redis::RedisResult<()> {
         let mut conn = self.pool.get()?;
         let mut pubsub = conn.as_pubsub();
         pubsub.subscribe(channel)?;
@@ -37,18 +32,15 @@ impl RedisInvoker {
         loop {
             let msg = pubsub.get_message()?;
             let payload: String = msg.get_payload()?;
-            info!("Received message: {}", payload);
 
-            if let ControlFlow::Break(_) = callback(payload) {
-                break;
-            }
+            info!("Received message: {}", payload);
         }
         Ok(())
     }
 
     /// Placeholder: async sending (future extension)
      /// Async send (using tokio-redis)
-    pub async fn send_to_await(&self, message: MessageToSend) -> redis::RedisResult<MessageToSend> {
+    pub async fn send_and_await(&self, message: MessageToSend) -> redis::RedisResult<MessageToSend> {
         let client_id = message.client_id.clone();
 
         // Get async connection
@@ -66,6 +58,7 @@ impl RedisInvoker {
 
         // Subscribe asynchronously
         let mut pubsub_conn = async_conn.into_pubsub();
+        //ASYNC pubsub connection
         pubsub_conn.subscribe(&client_id).await?;
         info!("Subscribed to {}", client_id);
 
@@ -78,9 +71,4 @@ impl RedisInvoker {
         Ok(serde_json::from_str(&payload).expect("Failed to deserialize response"))
     }
 
-
-    /// Placeholder: normal send (future extension)
-    pub fn send(&self) {
-        // TODO: implement send
-    }
 }
