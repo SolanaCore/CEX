@@ -1,5 +1,6 @@
 # First Principle Thinking — Experiment Log
-
+# PHILOSOPHY - FAIL FAST, LEARN FAST
+## KEEP ON ITERATING TILL YOU SUCCEED
 ## 📌 About This Project
 
 This project is an **experiment in problem-solving** using **first principle thinking** — a method where you break down a large, complex challenge into its most basic elements and then rebuild a solution from the ground up.
