@@ -1,14 +1,14 @@
 use uuid::Uuid;
 use serde::{Serialize, Deserialize};
-use sqlx::{FromRow, Error};
 use validator::Validate;
-use chrono::Utc;
+use chrono::{DateTime, Utc};
+use clickhouse::{Row};
+use clickhouse_connection_pool::{ClickHouseConfig, ClickHousePool, RetryConfig, PoolManager};
 
-use crate::utils::{SYMBOL_REGEX, UTC_REGEX};
+use crate::utils::SYMBOL_REGEX;
 use crate::types::{Kline, GetKlines};
-use crate::connection::CONNECTION_POOL;
 
-#[derive(Debug, Clone, PartialEq, PartialOrd, Serialize, Deserialize, FromRow, Validate)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Validate, Row)]
 pub struct Price {
     pub id: Uuid,
 
@@ -18,8 +18,7 @@ pub struct Price {
     #[validate(range(min = 0.0))]
     pub price: f64,
 
-    #[validate(regex(path = *UTC_REGEX))]
-    pub created_at: String,
+    pub created_at: DateTime<Utc>,
 }
 
 impl Price {
@@ -28,82 +27,82 @@ impl Price {
             id: Uuid::new_v4(),
             symbol,
             price,
-            created_at: Utc::now().to_rfc3339(),
+            created_at: Utc::now(),
         }
     }
 
-    pub async fn create_table() -> Result<(), Error> {
-        sqlx::query(
-            r#"
+    /// Create table in ClickHouse
+    pub async fn create_table(pm: &PoolManager) -> Result<(), Box<dyn std::error::Error>> {
+        let query = r#"
             CREATE TABLE IF NOT EXISTS prices (
-                id UUID PRIMARY KEY,
+                id UUID,
                 symbol String,
                 price Float64,
-                created_at String DEFAULT toString(now())
-            )
-            "#
-        )
-        .execute(&*CONNECTION_POOL)
-        .await?;
+                created_at DateTime
+            ) ENGINE = MergeTree()
+            ORDER BY (symbol, created_at)
+        "#;
 
+        pm.query(query).await?.execute().await?;
         Ok(())
     }
 
-    pub async fn insert(&self) -> Result<(), Error> {
-        sqlx::query(
-            r#"
-            INSERT INTO prices (id, symbol, price, created_at)
-            VALUES ($1, $2, $3, $4)
-            "#
-        )
-        .bind(self.id)
-        .bind(&self.symbol)
-        .bind(self.price)
-        .bind(&self.created_at)
-        .execute(&*CONNECTION_POOL)
-        .await?;
-
+    /// Insert a single row into ClickHouse
+    pub async fn insert(&self, pm: &PoolManager) -> Result<(), Box<dyn std::error::Error>> {
+        let mut insert = pm.insert("prices").await?;
+        insert.write(self).await?;
+        insert.end().await?;
         Ok(())
     }
 
-    pub async fn get_by_symbol(symbol: &str) -> Result<Vec<Price>, Error> {
-        let prices = sqlx::query_as::<_, Price>(
-            "SELECT * FROM prices WHERE symbol = $1"
-        )
-        .bind(symbol)
-        .fetch_all(&*CONNECTION_POOL)
-        .await?;
+    /// Query prices by symbol
+    pub async fn get_by_symbol(pm: &PoolManager, symbol: &str) -> Result<Vec<Price>, Box<dyn std::error::Error>> {
+        let query = format!(
+            "SELECT id, symbol, price, created_at 
+             FROM prices 
+             WHERE symbol = '{}'
+             ORDER BY created_at ASC",
+            symbol
+        );
 
-        Ok(prices)
+        let mut cursor = pm.query(&query).await?.fetch::<Price>();
+        let mut results = Vec::new();
+
+        while let Some(row) = cursor.next().await? {
+            results.push(row);
+        }
+        Ok(results)
     }
 
-    pub async fn get_klines(payload: GetKlines) -> Result<Vec<Kline>, Error> {
-        let group_by = payload.interval;
+    /// Get candlestick (kline) data
+    pub async fn get_klines(pm: &PoolManager, payload: GetKlines) -> Result<Vec<Kline>, Box<dyn std::error::Error>> {
         let query = format!(
             r#"
             SELECT
-                {group_by} as interval_time,
-                min(price)   as low,
-                max(price)   as high,
-                avg(price)   as avg_price,
-                any(price)   as open,
-                anyLast(price) as close
+                {group_by} AS interval_time,
+                min(price)   AS low,
+                max(price)   AS high,
+                avg(price)   AS avg_price,
+                any(price)   AS open,
+                anyLast(price) AS close
             FROM prices
-            WHERE symbol = $1
-              AND created_at BETWEEN $2 AND $3
+            WHERE symbol = '{symbol}'
+              AND created_at BETWEEN '{start}' AND '{end}'
             GROUP BY interval_time
             ORDER BY interval_time ASC
             "#,
-            group_by = group_by
+            group_by = payload.interval, // e.g. toStartOfHour(created_at)
+            symbol   = payload.symbol,
+            start    = payload.start,
+            end      = payload.end,
         );
 
-        let rows = sqlx::query_as::<_, Kline>(&query)
-            .bind(payload.symbol)
-            .bind(payload.start)
-            .bind(payload.end)
-            .fetch_all(&*CONNECTION_POOL)
-            .await?;
+        let mut cursor = pm.query(&query).await?.fetch::<Kline>();
+        let mut klines = Vec::new();
 
-        Ok(rows)
+        while let Some(row) = cursor.next().await? {
+            klines.push(row);
+        }
+        Ok(klines)
     }
 }
