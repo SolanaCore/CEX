@@ -1,7 +1,9 @@
 use crate::utils::{UTC_REGEX};
 use validator::Validate;
 use crate::utils::{validate_kline_interval};
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Validate)]
+use clickhouse::Row;
+
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Validate, Row)]
 pub struct Kline {
     #[validate(regex(path = *UTC_REGEX))]
     pub interval_time: String,
@@ -18,26 +20,15 @@ pub struct Kline {
 }
 
 impl Kline {
-    pub fn to_vec<T: sqlx::Row>(
-        rows: &T
-    ) -> Self {
-        let mut klines = Vec::new();
-        for row in rows {
-            let interval_time = row.try_get("interval_time")?;
-            let open: f64 = row.try_get("open")?;
-            let high: f64 = row.try_get("high")?;
-            let low: f64 = row.try_get("low")?;
-            let close: f64 = row.try_get("close")?;
-            let avg_price: f64 = row.try_get("avg_price")?;
-            klines.push(Kline {
-                interval_time,
-                open,
-                high,
-                low,
-                close,
-                avg_price,
-            });
-        }
+    pub fn column_names() -> Vec<&'static str> {
+        vec![
+            "interval_time",
+            "open",
+            "high",
+            "low",
+            "close",
+            "avg_price",
+        ]
     }
 }
 

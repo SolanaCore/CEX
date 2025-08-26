@@ -2,13 +2,17 @@ use uuid::Uuid;
 use serde::{Serialize, Deserialize};
 use validator::Validate;
 use chrono::{DateTime, Utc};
-use clickhouse::{Row};
-use clickhouse_connection_pool::{ClickHouseConfig, ClickHousePool, RetryConfig, PoolManager};
+use clickhouse::Row;
+use clickhouse_connection_pool::pool_manager::PoolManager;
 
-use crate::utils::SYMBOL_REGEX;
+use crate::utils::{
+    SYMBOL_REGEX,
+    interval_to_group_by,
+};
 use crate::types::{Kline, GetKlines};
+use crate::InsertPayload;
 
-#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Validate, Row)]
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize, Validate,Row)]
 pub struct Price {
     pub id: Uuid,
 
@@ -18,6 +22,7 @@ pub struct Price {
     #[validate(range(min = 0.0))]
     pub price: f64,
 
+    #[serde(with = "clickhouse::serde::chrono::datetime64::millis")]
     pub created_at: DateTime<Utc>,
 }
 
@@ -32,7 +37,7 @@ impl Price {
     }
 
     /// Create table in ClickHouse
-    pub async fn create_table(pm: &PoolManager) -> Result<(), Box<dyn std::error::Error>> {
+    pub async fn create_table_sql(pm: &PoolManager) -> Result<(), Box<dyn std::error::Error>> {
         let query = r#"
             CREATE TABLE IF NOT EXISTS prices (
                 id UUID,
@@ -43,20 +48,36 @@ impl Price {
             ORDER BY (symbol, created_at)
         "#;
 
-        pm.query(query).await?.execute().await?;
+        pm.execute_with_retry(query).await?;
+        println!("DB Price table init successful");
         Ok(())
     }
 
     /// Insert a single row into ClickHouse
-    pub async fn insert(&self, pm: &PoolManager) -> Result<(), Box<dyn std::error::Error>> {
-        let mut insert = pm.insert("prices").await?;
-        insert.write(self).await?;
-        insert.end().await?;
+    pub async fn insert_price(
+        &self,
+        pm: &PoolManager,
+        payload: InsertPayload,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        // validate the payload
+        payload.validate()?;
+
+        let query = format!(
+            "INSERT INTO prices (id, symbol, price, created_at) 
+             VALUES ('{}', '{}', {}, '{}')",
+            payload.id, payload.symbol, payload.price, payload.created_at
+        );
+
+        pm.execute_with_retry(&query).await?;
         Ok(())
     }
 
     /// Query prices by symbol
-    pub async fn get_by_symbol(pm: &PoolManager, symbol: &str) -> Result<Vec<Price>, Box<dyn std::error::Error>> {
+    pub async fn get_by_symbol(
+        pm: &PoolManager,
+        symbol: &str,
+    ) -> Result<Vec<Price>, Box<dyn std::error::Error>> {
+
         let query = format!(
             "SELECT id, symbol, price, created_at 
              FROM prices 
@@ -65,26 +86,28 @@ impl Price {
             symbol
         );
 
-        let mut cursor = pm.query(&query).await?.fetch::<Price>();
-        let mut results = Vec::new();
-
-        while let Some(row) = cursor.next().await? {
-            results.push(row);
-        }
+        let results: Vec<Price> = pm.execute_select_with_retry(&query).await?;
         Ok(results)
     }
 
     /// Get candlestick (kline) data
-    pub async fn get_klines(pm: &PoolManager, payload: GetKlines) -> Result<Vec<Kline>, Box<dyn std::error::Error>> {
+    pub async fn get_klines(
+        pm: &PoolManager,
+        mut payload: GetKlines, //marked `mut`
+    ) -> Result<Vec<Kline>, Box<dyn std::error::Error>> {
+        //validate the payload 
+        payload.validate()?;
+        payload.interval = interval_to_group_by(&payload.interval).to_string();
+
         let query = format!(
             r#"
             SELECT
                 {group_by} AS interval_time,
-                min(price)   AS low,
-                max(price)   AS high,
-                avg(price)   AS avg_price,
-                any(price)   AS open,
-                anyLast(price) AS close
+                min(price)       AS low,
+                max(price)       AS high,
+                avg(price)       AS avg_price,
+                any(price)       AS open,
+                anyLast(price)   AS close
             FROM prices
             WHERE symbol = '{symbol}'
               AND created_at BETWEEN '{start}' AND '{end}'
@@ -97,12 +120,7 @@ impl Price {
             end      = payload.end,
         );
 
-        let mut cursor = pm.query(&query).await?.fetch::<Kline>();
-        let mut klines = Vec::new();
-
-        while let Some(row) = cursor.next().await? {
-            klines.push(row);
-        }
+        let klines: Vec<Kline> = pm.execute_select_with_retry(&query).await?;
         Ok(klines)
     }
 }

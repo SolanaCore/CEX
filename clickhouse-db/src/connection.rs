@@ -8,7 +8,6 @@ use anyhow::Result;
 use dotenv::dotenv;
 use std::{error::Error, sync::Arc};
 use tokio::runtime::Runtime;
-
 use crate::error::ClickhouseError;
 
 pub static CONNECTION_POOL: Lazy<Arc<PoolManager>> = Lazy::new(|| {
@@ -75,12 +74,12 @@ async fn create_pool_manager(
 ) -> Result<Arc<PoolManager>, ClickhouseError> {
     let manager = PoolManager::new(config, None).await;
 
-    if let Err(e) = manager.execute_with_retry(Price::create_table_sql()).await {
-        return Err(ClickhouseError::Query {
-            query: Price::create_table_sql().to_string(),
-            reason: e.to_string(),
-        });
-    }
+    // if let Err(e) = manager.execute_with_retry(Price::create_table_sql()).await {
+    //     return Err(ClickhouseError::Query {
+    //         query: Price::create_table_sql().to_string(),
+    //         reason: e.to_string(),
+    //     });
+    // }
 
     println!("DB init successful");
     Ok(Arc::new(manager))
