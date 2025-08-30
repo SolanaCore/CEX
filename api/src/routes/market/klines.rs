@@ -1,13 +1,17 @@
-use actix_web::{get, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use chrono::{Utc};
-use crate::utils::{validate_utc_time_format};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub(crate) struct Response;
+use crate::{
+    utils::{validate_utc_time_format}
+};
+
+use actix_web::{
+    http::StatusCode,
+    web, post, HttpResponse, Responder, cookie::Cookie
+};
 
 
-#[get("/api/v1/klines")]
+#[get("/klines")]
 async fn klines(data: web::Json<Request>) -> impl Responder {
     let symbol = data.symbol.clone();
     let klines_interval = data.klines_interval.clone();
@@ -27,4 +31,9 @@ async fn klines(data: web::Json<Request>) -> impl Responder {
     };
 
     HttpResponse::Ok().json(Response)
+}
+
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(klines);
 }

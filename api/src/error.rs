@@ -1,7 +1,7 @@
 use thiserror::Error;
 
 #[derive(Error, Debug)]
-pub enum DataStoreError {
+pub enum ApiError {
     #[error("Invalid kline interval `{0}` is not available. Available intervals: 1m, 5m, 15m, 1h, 1d, etc.")]
     InvalidKlineInterval(String),
 
@@ -38,3 +38,5 @@ pub enum DataStoreError {
     #[error("Unknown error occurred. Please contact support.")]
     UnknownError,
 }
+
+

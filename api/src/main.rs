@@ -1,4 +1,4 @@
-use actix_web::{App, HttpServer};
+use actix_web::{middleware::Logger, web, App, HttpServer, HttpResponse, Responder};
 use dotenv::dotenv;
 use postgres::connection::DB_POOL;
 use actix_web::web::Data;
@@ -6,12 +6,23 @@ use actix_web::web::Data;
 
 #[actix_web::main]
 async fn main() -> std::io::Result<()> {
-    let _db_conn = Data::new(DB_POOL.get());
-    dotenv().ok(); // This line loads the environment variables from the ".env" file.
-    HttpServer::new(|| {
+    dotenv().ok();
+    env_logger::init();
+
+    let db_pool = DB_POOL.clone();
+
+    HttpServer::new(move || {
         App::new()
+            .app_data(Data::new(db_pool.clone()))
+            .wrap(Logger::default())
+            .service(
+                web::scope("/api")
+                .configure(api::routes::routes_config)
+                
+            )
+            .configure(api::routes::routes_config)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind(())?
     .run()
-    .await
+    .await;
 }

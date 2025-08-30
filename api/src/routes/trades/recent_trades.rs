@@ -1,15 +1,19 @@
-use actix_web::{post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::env;
-use actix_web::http::StatusCode;
+
+use actix_web::{
+    http::StatusCode,
+    web, post, HttpResponse, Responder, cookie::Cookie
+};
 
 
-pub(crate) struct Response {
-    
-} 
-#[get("/api/v1/recent_trades")]
+#[get("/recent_trades")]
 async fn recent_trade() {
 
         HttpResponse::Ok().finish()
 
+}
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(recent_trade);
 }

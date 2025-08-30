@@ -1,19 +1,26 @@
-use actix_web::{post, web, HttpResponse, Responder};
 use serde::{Deserialize, Serialize};
 use std::env;
-use actix_web::http::StatusCode;
 
+use actix_web::{
+    http::StatusCode,
+    web, post, HttpResponse, Responder, cookie::Cookie
+};
 
-
-pub(crate) struct Response {
-    
-} 
-
-#[get("/api/v1/depth")]
+#[get("depth")]
 async fn depth(data:web::Json<Request> ) {
+    data.validate().map_err(|e| {
+        HttpResponse::BadRequest().json(format!("Invalid request: {}", e))
+    })?;
+
     let symbol = data.symbol.clone();
+    let limit = data.limit.unwrap_or(100);
 
-    //query the db to return the depth of the orderbook for the particular symbol
-    HttpResponse::Ok().finish()
+    //cache the symbol for a cex and verify it exists in the db... & then send redis the request to get the depth for that symbol...
+    //add redis rate limiter 
+        HttpResponse::Ok().finish()
 
+}
+
+pub fn config(cfg: &mut web::ServiceConfig) {
+    cfg.service(depth);
 }

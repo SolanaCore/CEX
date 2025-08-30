@@ -1,37 +1,13 @@
 use regex::Regex;
-use once_cell::sync::Lazy;
-use jsonwebtoken::{DecodingKey, EncodingKey};
+
 use std::env;
 //Argon2 -> for password hashing in rust...
-use argon2::{Argon2, PasswordHasher, PasswordVerifier, password_hash::Salt};
-
-//JWT STUFF 
-struct Keys {
-    encoding: EncodingKey,
-    decoding: DecodingKey,
-}
-
-impl Keys {
-    fn new() -> Self {
-        Self {
-            encoding: EncodingKey::from_secret(env::var(secret)),
-            decoding: DecodingKey::from_secret(env::var(secret)),
-        }
-    }
-}
 
 //constants
 pub const MIN_CONST: u64 = 1;
 pub const MAX_CONST: u64 = 25;
 
-//STATIC 
-pub static KEYS: Lazy<Keys> = Lazy::new(|| {
-    Keys::new()
-});
 
-pub static ARGON2: Lazy<Argon2> = Lazy::new(|| {
-    Argon2::default()
-})
 
 pub static SYMBOL_REGEX: Lazy<Regex> = Lazy::new(|| {
     Regex::new(r"^[A-Z]{2,10}/[A-Z]{2,10}$").unwrap()
@@ -42,10 +18,7 @@ pub static UTC_REGEX - LAZY::new(|| {
 });
 
 
-pub fn hash_password(password: &str) {
-    let hash = (ARGON2.get()).hash_password(password.as_bytes(), salt).unwrap();
-    hash
-}
+
 
 pub fn is_valid_kline(klines_interval: &str) -> Result<(), ValidationError> {
     // Allowed kline intervals
@@ -68,4 +41,132 @@ pub fn is_valid_kline(klines_interval: &str) -> Result<(), ValidationError> {
 
 pub fn check_if_exist(username: &str) {
     
+}
+
+
+
+fn default_end_time() -> Some(DateTime<Utc>) {
+    Some(Utc::now());
+}
+
+
+pub fn add_cookie(placeholder: &str, payload, path: &str) -> Cookie {
+    let cookie = Cookie::build(placeholder, payload)
+                        .path(path)
+                        .secure(true)
+                        .http_only(true)
+                        .finish();
+                        cookie
+}
+
+pub fn get_token(claims: &Claims, KEYS: Keys) -> Result<String, AuthError> {
+     encode(&Header::default(), &claims, &KEYS.encoding).map_err(
+        |_| err!("Token creation failed")
+    )?;
+}
+
+
+
+//ENCRYPTION/DEPCRIPTION
+
+use aes_gcm::aead::generic_array::GenericArray;
+use aes_gcm::aead::Aead;
+use aes_gcm::{Aes256Gcm, KeyInit, Nonce};
+use anyhow::anyhow;
+use data_encoding::HEXLOWER;
+use rand::seq::SliceRandom;
+use std::str;
+
+#[derive(Debug)]
+struct EncryptionKey(String);
+#[derive(Debug)]
+struct EncryptionNonce(String);
+
+impl From<String> for EncryptionKey {
+    fn from(key: String) -> Self {
+        Self(key)
+    }
+}
+
+impl From<String> for EncryptionNonce {
+    fn from(nonce: String) -> Self {
+        Self(nonce)
+    }
+}
+
+const RAND_BASE: &str = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const KEY_SIZE: usize = 32;
+const NONCE_SIZE: usize = 12;
+
+fn main() -> anyhow::Result<()> {
+    let (encryption_key, encryption_nonce) = init()?;
+    let key = encryption_key.0.as_bytes();
+    let nonce = encryption_nonce.0.as_bytes();
+
+    // contents to be encrypted
+    let contents = "plain text".to_string();
+
+    // encryption
+    let encrypted_contents =
+        aes_encrypt(contents.as_bytes(), key, nonce).map_err(|e| anyhow!(e))?;
+    println!("{:?}", encrypted_contents);
+
+    // encode
+    let encoded_contents = HEXLOWER.encode(&encrypted_contents);
+    println!("{}", encoded_contents);
+
+    // decode
+    let decoded_contents = HEXLOWER
+        .decode(encoded_contents.as_ref())
+        .map_err(|e| anyhow!(e))?;
+    println!("{:?}", decoded_contents);
+
+    // decryption
+    let plain_text = aes_decrypt(&encrypted_contents, key, nonce).map_err(|e| anyhow!(e))?;
+    let decrypted_contents: &str = str::from_utf8(&plain_text)?;
+    println!("{}", decrypted_contents);
+
+    assert_eq!(&contents, decrypted_contents);
+
+    Ok(())
+}
+
+fn init() -> anyhow::Result<(EncryptionKey, EncryptionNonce)> {
+    let key = gen_rand_string(KEY_SIZE)?.into();
+    let nonce = gen_rand_string(NONCE_SIZE)?.into();
+
+    println!("{:?}, {:?}", key, nonce);
+    Ok((key, nonce))
+}
+
+fn gen_rand_string(size: usize) -> anyhow::Result<String> {
+    let mut rng = &mut rand::thread_rng();
+    String::from_utf8(
+        RAND_BASE
+            .as_bytes()
+            .choose_multiple(&mut rng, size)
+            .cloned()
+            .collect(),
+    )
+    .map_err(|e| anyhow!(e))
+}
+
+fn aes_encrypt(contents: &[u8], key: &[u8], nonce: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let key = GenericArray::from_slice(key);
+    let nonce = Nonce::from_slice(nonce);
+
+    // encryption
+    let cipher = Aes256Gcm::new(key);
+    cipher
+        .encrypt(nonce, contents.as_ref())
+        .map_err(|e| anyhow!(e))
+}
+
+fn aes_decrypt(cipher_text: &[u8], key: &[u8], nonce: &[u8]) -> anyhow::Result<Vec<u8>> {
+    let key = GenericArray::from_slice(key);
+    let nonce = Nonce::from_slice(nonce);
+
+    // decryption
+    let cipher = Aes256Gcm::new(key);
+    cipher.decrypt(nonce, cipher_text).map_err(|e| anyhow!(e))
 }
