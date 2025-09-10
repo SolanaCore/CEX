@@ -1,0 +1,39 @@
+version: 2
+updates:
+  # Rust dependencies
+  - package-ecosystem: "cargo"
+    directory: "/api"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/ws"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/engine"
+    schedule:
+      interval: "weekly"
+
+  # cargo dependencies
+  - package-ecosystem: "cargo"
+    directory: "/postgres-db"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/clickhouse-db"
+    schedule:
+      interval: "weekly"
+
+  - package-ecosystem: "cargo"
+    directory: "/redis-db"
+    schedule:
+      interval: "weekly"
+
+  # Next.js frontend (Node.js ecosystem)
+  - package-ecosystem: "npm" # or "yarn" if you use Yarn
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
