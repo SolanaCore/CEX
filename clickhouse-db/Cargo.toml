@@ -5,7 +5,7 @@ version = "0.0.1"
 
 [dependencies]
 anyhow = "1.0.99"
-chrono = "0.4.41"
+chrono = "0.4.42"
 clickhouse = { version = "0.13.1", features = ["native-tls", "uuid", "chrono"]}
 clickhouse-connection-pool = "0.1.7"
 dotenv = "0.15.0"
