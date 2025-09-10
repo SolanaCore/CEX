@@ -453,9 +453,9 @@ dependencies = [
 
 [[package]]
 name = "clickhouse-connection-pool"
-version = "0.1.7"
+version = "0.1.8"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "979b49afdd9e47295c5d42698671fea474f1351a3b5955a21ea9753c8ec07e27"
+checksum = "d689729703ec909b3432dc5c0c5e7903d36e46d9c4bf3c17061709cca37a2ae2"
 dependencies = [
  "actix-web-prom",
  "anyhow",
