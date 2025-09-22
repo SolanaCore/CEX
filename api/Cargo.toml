@@ -20,6 +20,6 @@ argon2 = "0.5.3"
 validator = { version = "0.20.0", features = ["derive"] }
 env_logger = "0.11.8"
 branchia = "0.0.1"
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 uuid = "1.18.1"
 chacha20poly1305 = "0.10.1"
