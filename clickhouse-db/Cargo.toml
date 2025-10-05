@@ -4,7 +4,7 @@ edition = "2024"
 version = "0.0.1"
 
 [dependencies]
-anyhow = "1.0.99"
+anyhow = "1.0.100"
 chrono = "0.4.42"
 clickhouse = { version = "0.13.1", features = ["native-tls", "uuid", "chrono"]}
 clickhouse-connection-pool = "0.1.8"
