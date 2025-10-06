@@ -5,7 +5,7 @@ edition = "2024"
 
 [dependencies]
 serde = {version = "1.0.226", features = ["derive"]}
-jsonwebtoken = "9" # Or the latest version
+jsonwebtoken = "10" # Or the latest version
 actix-web = "4.11.0"
 serde_json = "1.0.145"
 dotenv = "0.15.0"
