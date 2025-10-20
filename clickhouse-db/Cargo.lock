@@ -424,7 +424,6 @@ checksum = "9a9a81a1dffadd762ee662635ce409232258ce9beebd7cc0fa227df0b5e7efc0"
 dependencies = [
  "bstr",
  "bytes",
- "chrono",
  "cityhash-rs",
  "clickhouse-derive",
  "futures",
@@ -441,6 +440,34 @@ dependencies = [
  "thiserror 1.0.69",
  "tokio",
  "url",
+]
+
+[[package]]
+name = "clickhouse"
+version = "0.14.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "52d6ac02411e84914fdf4e0565bfe02fc4bebdf375bd1fc58168bad74b3707a2"
+dependencies = [
+ "bstr",
+ "bytes",
+ "chrono",
+ "cityhash-rs",
+ "clickhouse-macros",
+ "clickhouse-types",
+ "futures-channel",
+ "futures-util",
+ "http-body-util",
+ "hyper",
+ "hyper-tls",
+ "hyper-util",
+ "lz4_flex",
+ "replace_with",
+ "sealed",
+ "serde",
+ "static_assertions",
+ "thiserror 2.0.16",
+ "tokio",
+ "url",
  "uuid",
 ]
 
@@ -452,7 +479,7 @@ checksum = "d689729703ec909b3432dc5c0c5e7903d36e46d9c4bf3c17061709cca37a2ae2"
 dependencies = [
  "actix-web-prom",
  "anyhow",
- "clickhouse",
+ "clickhouse 0.13.3",
  "deadpool",
  "futures",
  "futures-util",
@@ -471,7 +498,7 @@ version = "0.0.1"
 dependencies = [
  "anyhow",
  "chrono",
- "clickhouse",
+ "clickhouse 0.14.0",
  "clickhouse-connection-pool",
  "dotenv",
  "env_logger",
@@ -496,6 +523,28 @@ dependencies = [
  "quote",
  "serde_derive_internals",
  "syn",
+]
+
+[[package]]
+name = "clickhouse-macros"
+version = "0.3.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "ff6669899e23cb87b43daf7996f0ea3b9c07d0fb933d745bb7b815b052515ae3"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "serde_derive_internals",
+ "syn",
+]
+
+[[package]]
+name = "clickhouse-types"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "235f72141cfbe1d2d930d8156a34814c8a3d60491febb9af64cc52a203444764"
+dependencies = [
+ "bytes",
+ "thiserror 2.0.16",
 ]
 
 [[package]]
